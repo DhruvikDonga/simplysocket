@@ -1,4 +1,4 @@
-module github.com/DhruvikDonga/gomeshstream
+module github.com/DhruvikDonga/simplysocket
 
 go 1.21.3
 
