@@ -242,6 +242,13 @@ func (server *meshServer) DisconnectClient(client *client) {
 						delete(server.rooms, roomname)
 					}
 				}
+			} else {
+				select {
+				case server.rooms[roomname].clientInRoomEvent <- []string{"client-left-room", roomname, client.slug}:
+					log.Println("client ", client.slug, " left a room ", roomname)
+				default:
+					log.Println("Failed to trigger left room trigger for client ", client.slug, " in room", roomname)
+				}
 			}
 		}
 	}
