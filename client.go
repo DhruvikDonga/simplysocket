@@ -5,6 +5,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -42,9 +43,10 @@ var (
 type client struct {
 	slug string
 
-	conn       *websocket.Conn
-	meshServer *meshServer //keep reference of webserver to every client
-	send       chan []byte
+	authMetadata []string //client can have a list of authorization metadata for secure rooms
+	conn         *websocket.Conn
+	meshServer   *meshServer //keep reference of webserver to every client
+	send         chan []byte
 }
 
 // newClient initialize new websocket client like App server in routes.go
@@ -165,20 +167,20 @@ func (client *client) disconnect() {
 
 // ServeWs handles websocket requests from clients requests.
 func ServeWs(meshserv *meshServer, w http.ResponseWriter, r *http.Request) {
-
-	conn, err := websocket.Upgrade(w, r, nil, 4096, 4096)
+	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
 	name := r.URL.Query().Get("name") // ws://url?name=dumm_name
-
+	roles := r.Header.Get("Role")
 	if len(name) < 1 {
 		name = "Guest"
 	}
 
 	client := newClient(conn, meshserv, name)
+	client.authMetadata = strings.Split(roles, ",")
 
 	log.Println("New client ", client.slug, " joined the hub")
 
