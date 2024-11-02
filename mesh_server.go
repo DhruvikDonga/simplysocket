@@ -111,7 +111,6 @@ func NewMeshServer(name string, meshconf *MeshServerConfig, rd RoomData) *meshSe
 
 // Run mesh server accepting various requests
 func (server *meshServer) RunMeshServer() {
-	log.Println("Mesh Server ", server.gamename, " started")
 	for {
 		select {
 		case client := <-server.clientConnect:
@@ -127,14 +126,9 @@ func (server *meshServer) RunMeshServer() {
 			server.DeleteRoom(roomname) //remove the client
 
 		case message := <-server.processMessage: //this broadcaster will broadcast to all clients
-			//log.Println("Websocket broadcast", message)
-			// if server.isbroadcaston {
-			// 	server.BroadcastMessage(message) //broadcast the message from readpump
-			// }
 			roomtosend := server.rooms[message.Target]
 			select {
 			case roomtosend.consumeMessage <- message:
-				//log.Println("Room name ", roomtosend.slug, "Created by ", roomtosend.createdby)
 			default:
 				log.Println("Failed to send  to Room name ", roomtosend.slug)
 
@@ -156,7 +150,6 @@ func (server *meshServer) GetGameName() string {
 }
 
 func (server *meshServer) GetRooms() []string {
-	log.Println("Getting the rooms list")
 	roomslist := []string{}
 
 	server.mu.Lock()
@@ -200,10 +193,8 @@ func (server *meshServer) disconnectClient(client *client) {
 		if _, ok := clientsmap[client.slug]; ok {
 			delete(clientsmap, client.slug)
 			delete(server.rooms[roomname].clientsinroom, client.slug)
-			log.Println("removing client from the room")
 			select {
 			case server.rooms[roomname].clientInRoomEvent <- []string{"client-left-room", roomname, client.slug}:
-				log.Println("client ", client.slug, " left a room ", roomname)
 			default:
 				log.Println("Failed to trigger left room trigger for client ", client.slug, " in room", roomname)
 			}
@@ -212,7 +203,6 @@ func (server *meshServer) disconnectClient(client *client) {
 					delete(server.clientsinroom, roomname)
 					//server.DeleteRoom(roomname)
 					if r, ok := server.rooms[roomname]; ok {
-						log.Println("Closing room")
 						close(r.stopped)
 						delete(server.rooms, roomname)
 					}
@@ -254,7 +244,6 @@ func (server *meshServer) JoinClientRoom(roomname string, clientname string, rd 
 	}
 	server.mu.RUnlock()
 	if noroom {
-		log.Printf("Create room Details: %+v\n ", rd)
 		server.createRoom(roomname, clientname, rd)
 	}
 	server.mu.Lock()
@@ -270,7 +259,6 @@ func (server *meshServer) JoinClientRoom(roomname string, clientname string, rd 
 			server.rooms[roomname].clientsinroom = server.clientsinroom[roomname]
 			select {
 			case server.rooms[roomname].clientInRoomEvent <- []string{"client-joined-room", roomname, clientname}:
-				log.Println("client ", clientname, " joined a room ", roomname)
 			default:
 				log.Println("Failed to trigger join room trigger for client ", clientname, " in room", roomname)
 			}
@@ -292,7 +280,6 @@ func (server *meshServer) RemoveClientRoom(roomname string, clientname string) {
 		server.clientInRoomEvent <- []string{"client-left-room", roomname, clientname}
 		select {
 		case server.rooms[roomname].clientInRoomEvent <- []string{"client-left-room", roomname, clientname}:
-			log.Println("client ", clientname, " removed from a room ", roomname)
 		default:
 			log.Println("Failed to trigger left room trigger for client ", clientname, " in room", roomname)
 		}
@@ -300,7 +287,6 @@ func (server *meshServer) RemoveClientRoom(roomname string, clientname string) {
 			delete(server.clientsinroom, roomname)
 			//server.DeleteRoom(roomname)
 			if r, ok := server.rooms[roomname]; ok {
-				log.Println("Closing room")
 				close(r.stopped)
 				delete(server.rooms, roomname)
 			}

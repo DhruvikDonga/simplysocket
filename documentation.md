@@ -1,5 +1,16 @@
 
 # SimplySocket Documentation
+- [SimplySocket Documentation](#simplysocket-documentation)
+  - [Installation](#installation)
+  - [Understanding basics of Server , Room, Message and Client](#understanding-basics-of-server--room-message-and-client)
+    - [Client](#client)
+    - [Server](#server)
+    - [Rooms](#rooms)
+    - [Messages](#messages)
+
+## Installation
+
+```go get github.com/DhruvikDonga/simplysocket```
 
 ## Understanding basics of Server , Room, Message and Client
 

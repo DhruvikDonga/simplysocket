@@ -88,7 +88,7 @@ func (client *client) readPump() {
 		_, jsonMessage, err := client.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("\nunexepected close error: %v", err)
+				log.Printf("\n ReadPump unexepected close error: %v", err)
 				break
 			}
 			break
@@ -96,17 +96,15 @@ func (client *client) readPump() {
 
 		var message Message
 		if err := json.Unmarshal(jsonMessage, &message); err != nil {
-			log.Printf("Error on unmarshal JSON message %s", err)
+			log.Printf("ReadPump Error on unmarshal JSON message %s", err)
 		}
 		message.Sender = client.slug
-		log.Println("JSON-MESSAGE-readpump", string(jsonMessage))
 		client.meshServer.mu.Lock()
 		roomtosend := client.meshServer.rooms[message.Target]
 		client.meshServer.mu.Unlock()
 
 		select {
 		case roomtosend.consumeMessage <- &message:
-			//log.Println("Room name ", roomtosend.slug, "Created by ", roomtosend.createdby)
 		default:
 			log.Println("Failed to send  to Room name ", roomtosend.slug)
 
@@ -131,7 +129,6 @@ func (client *client) writePump() {
 				client.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
-			log.Println("Message send channel:-", string(message))
 			w, err := client.conn.NextWriter(websocket.TextMessage)
 			if err != nil {
 				return
@@ -169,7 +166,7 @@ func (client *client) disconnect() {
 func ServeWs(meshserv *meshServer, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println(err)
+		log.Println("Failed to intiazlize websocket connection:-", err)
 		return
 	}
 
@@ -182,9 +179,6 @@ func ServeWs(meshserv *meshServer, w http.ResponseWriter, r *http.Request) {
 	client := newClient(conn, meshserv, name)
 	client.authMetadata = strings.Split(roles, ",")
 
-	log.Println("New client ", client.slug, " joined the hub")
-
-	//log.Println(client.Gamemetadata.Color)
 	go client.readPump()
 	go client.writePump()
 

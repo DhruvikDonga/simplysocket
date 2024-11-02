@@ -36,6 +36,3 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Documentation
 
 For more detailed information, check the [Documentation](documentation.md) file.
-- [Installation Guide](documentation.md#installation-guide)
-- [Usage](documentation.md#usage)
-- [API Reference](documentation.md#api-reference)

@@ -94,16 +94,13 @@ func (room *room) BroadcastMessage(message *Message) {
 	room.mu.RLock()
 	defer room.mu.RUnlock()
 	jsonBytes := message.Encode()
-	log.Println("Broadcasting message from room ----", string(jsonBytes))
 	if message.IsTargetClient {
 
 		client := room.clientsinroom[message.Target]
-		log.Println("Pushing to client :-", client.slug)
 
 		client.send <- jsonBytes
 	} else {
 		clients := room.clientsinroom
-		log.Println("Pushing to clients :-", clients)
 		for _, c := range clients {
 			c.send <- jsonBytes
 		}
