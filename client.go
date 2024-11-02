@@ -164,6 +164,10 @@ func (client *client) disconnect() {
 
 // ServeWs handles websocket requests from clients requests.
 func ServeWs(meshserv *meshServer, w http.ResponseWriter, r *http.Request) {
+
+	upgrader.CheckOrigin = func(r *http.Request) bool {
+		return true
+	}
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println("Failed to intiazlize websocket connection:-", err)
