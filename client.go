@@ -5,6 +5,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -42,9 +43,10 @@ var (
 type client struct {
 	slug string
 
-	conn       *websocket.Conn
-	meshServer *meshServer //keep reference of webserver to every client
-	send       chan []byte
+	authMetadata []string //client can have a list of authorization metadata for secure rooms
+	conn         *websocket.Conn
+	meshServer   *meshServer //keep reference of webserver to every client
+	send         chan []byte
 }
 
 // newClient initialize new websocket client like App server in routes.go
@@ -86,7 +88,7 @@ func (client *client) readPump() {
 		_, jsonMessage, err := client.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("\nunexepected close error: %v", err)
+				log.Printf("\n ReadPump unexepected close error: %v", err)
 				break
 			}
 			break
@@ -94,17 +96,15 @@ func (client *client) readPump() {
 
 		var message Message
 		if err := json.Unmarshal(jsonMessage, &message); err != nil {
-			log.Printf("Error on unmarshal JSON message %s", err)
+			log.Printf("ReadPump Error on unmarshal JSON message %s", err)
 		}
 		message.Sender = client.slug
-		log.Println("JSON-MESSAGE-readpump", string(jsonMessage))
 		client.meshServer.mu.Lock()
 		roomtosend := client.meshServer.rooms[message.Target]
 		client.meshServer.mu.Unlock()
 
 		select {
 		case roomtosend.consumeMessage <- &message:
-			//log.Println("Room name ", roomtosend.slug, "Created by ", roomtosend.createdby)
 		default:
 			log.Println("Failed to send  to Room name ", roomtosend.slug)
 
@@ -129,7 +129,6 @@ func (client *client) writePump() {
 				client.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
-			log.Println("Message send channel:-", string(message))
 			w, err := client.conn.NextWriter(websocket.TextMessage)
 			if err != nil {
 				return
@@ -165,24 +164,21 @@ func (client *client) disconnect() {
 
 // ServeWs handles websocket requests from clients requests.
 func ServeWs(meshserv *meshServer, w http.ResponseWriter, r *http.Request) {
-
-	conn, err := websocket.Upgrade(w, r, nil, 4096, 4096)
+	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println(err)
+		log.Println("Failed to intiazlize websocket connection:-", err)
 		return
 	}
 
 	name := r.URL.Query().Get("name") // ws://url?name=dumm_name
-
+	roles := r.Header.Get("Role")
 	if len(name) < 1 {
 		name = "Guest"
 	}
 
 	client := newClient(conn, meshserv, name)
+	client.authMetadata = strings.Split(roles, ",")
 
-	log.Println("New client ", client.slug, " joined the hub")
-
-	//log.Println(client.Gamemetadata.Color)
 	go client.readPump()
 	go client.writePump()
 
