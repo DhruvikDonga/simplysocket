@@ -2,6 +2,8 @@
 
 SimplySocket is a Golang package designed for pushing messages to clients and managing rooms and events. This package is a part of the Words Battle game project.
 
+Checkout [wordsbattle multiplayer game](https://github.com/DhruvikDonga/wordsbattle) which uses simplysocket
+
 - [SimplySocket](#simplysocket)
   - [Introduction](#introduction)
     - [Features](#features)
